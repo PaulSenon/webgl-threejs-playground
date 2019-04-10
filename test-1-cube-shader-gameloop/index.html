@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>MDN Games: Shaders demo</title>
+	<style>
+		body { margin: 0; padding: 0; font-size: 1em; font-family: sans-serif;}
+		canvas { width: 100%; height: 100%; }
+        #game_infos { padding: 5px 10px; display: block; position: absolute; top: 0; left: 0; background-color: rgba(255, 255, 255, 0.5);}
+        #game_infos > ul { color : white; list-style-type: none; margin: 0; padding: 0;}
+        i { font-style: normal;}
+	</style>
+	<script src="../three.min.js"></script>
+</head>
+<body>
+    <div id="game_infos">
+        <ul>
+            <li><i id="fps_count">0</i></li>
+
+        </ul>
+    </div>
+  <script id="vs_default" type="x-shader/x-vertex">
+    precision highp float;
+    uniform float u_time;
+	void main(){
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x + sin(u_time), position.y + cos(u_time), position.z+sin(u_time), 1.0);
+    }
+  </script>
+  <script id="fs_default" type="x-shader/x-fragment">
+    precision highp float;
+    uniform float u_time;
+	void main(){
+        gl_FragColor = vec4(0.5+sin(u_time), 1.0+cos(u_time), 0.5+cos(u_time), 0.5);
+    }
+  </script>
+  <script>
+      class ColorCube {
+            constructor({x, y, z, material}){
+                this.geometry = new THREE.BoxGeometry( x, y, z );
+                this.mesh = new THREE.Mesh( this.geometry, material );
+            }
+            getMesh(){
+                return this.mesh;
+            }
+            addRotationAxisAngle(axis, amount){
+                let quaternionAngle = new THREE.Quaternion();
+                quaternionAngle.setFromAxisAngle(axis, amount);
+            
+                this.mesh.quaternion.multiply(quaternionAngle);
+            }
+      }
+  </script>
+  <script>
+    let defaultMaterial = new THREE.ShaderMaterial( {
+        uniforms: {
+            u_time: { type: 'f', value: 0.0}
+        },
+        vertexShader: document.getElementById( 'vs_default' ).textContent,
+        fragmentShader: document.getElementById( 'fs_default' ).textContent
+    });
+
+    function updateShaderValues({elapsedTime}){
+        defaultMaterial.uniforms.u_time.value = elapsedTime;
+        defaultMaterial.needsUpdate = true;
+    }
+  </script>
+  <script>
+    const fpsCount_dom = document.getElementById( 'fps_count' );
+
+    const GRAVITY = 9.80665;
+    const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+    const screenRatio = windowWidth / windowHeight
+    let scene;
+    let camera;
+    let renderer;
+
+    // Meshes
+    let cube1;
+    // ----------
+
+    function init(){
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera( 75, screenRatio, 0.1, 1000 );
+        renderer = new THREE.WebGLRenderer({ antialias:true });
+        renderer.setSize( windowWidth, windowHeight );
+        document.body.appendChild( renderer.domElement );
+
+        camera.translateOnAxis(new THREE.Vector3(0, 1, 8).normalize(), 10) ;
+
+        cube1 = new ColorCube({
+            x: 1, y: 1, z: 1, 
+            material: defaultMaterial
+        });
+        scene.add(cube1.getMesh());
+    }
+
+    // Game time
+    let deltaTime = 0;
+    const startTime = Date.now();
+    let elapsedTime = 0;
+    let lastTime = startTime;
+    const frameLimit = 2000;
+    let frameCount = 0;
+    let fpsCount = 0;
+    let htmlUIUpdateRate = 15;
+    // ----------
+    let rotateAmount = Math.PI / 30;
+    let rotateSpeed = 1;
+    function gameLoop(){
+        frameCount < frameLimit && requestAnimationFrame(gameLoop);
+        deltaTime = Date.now() - lastTime;
+        lastTime = Date.now();
+        elapsedTime = Date.now() - startTime;
+        fpsCount = 1000 / deltaTime;
+        !(frameCount%htmlUIUpdateRate) && (fpsCount_dom.innerHTML = parseInt(fpsCount));
+        // --------------------------
+        updateShaderValues({elapsedTime: elapsedTime/1000});
+        cube1.addRotationAxisAngle(new THREE.Vector3(0, 1, 1),  (rotateAmount * rotateSpeed) / deltaTime);
+        // --------------------------
+        renderer.render(scene, camera);
+        frameCount ++;
+    }
+
+    init();
+    gameLoop();
+  </script>
+  <script>
+      let mouseX = 0;
+      let mouseY = 0;
+      const canvas = document.getElementsByTagName('canvas')[0];
+      canvas.onmousemove = (event) => {
+        event.preventDefault();
+		mouseX = event.pageX - canvas.offsetLeft;
+        mouseY = event.pageY - canvas.offsetTop;
+      };
+  </script>
+</body>
+</html>
