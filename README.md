@@ -14,7 +14,10 @@
 * basic CPU 3DObjects manipulation using Quaternion angles and Vectors
 
 ### test 2 :  
-* WIP (basic gravity/physics engine) 
+* basic force interactions applying gravity force and move force
+* green line shows moveForce vector (for a future update it may be cool to control it by user input (simple to do))
+* red line shows gravity vector (for a future update it may be cool to angle it toward another element to see gravitational movements)
+* cyan line shows the processed velocity of the body (the cube) (from all forces)
 
 ### Ideas for later (maybe one day...) :  
 * interractive vertex shader, subdivide mesh and apply locale modifications around cursor
