@@ -30,6 +30,11 @@
     * now move on 3D plan
     * jump (with space)
     * ground collision
+* [V4] :
+    * move relatively to the camera
+    * camera looks at the cube
+    * camera follows the cube
+    * we added added a cube for reference
     
 
 # Ideas for later (maybe one day...) :  

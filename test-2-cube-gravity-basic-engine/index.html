@@ -90,6 +90,7 @@
 
     // Meshes
     let cube1;
+    let cube2;
     // ----------
     let debugLineGeometry;
     let lineMaterialRed;
@@ -116,6 +117,14 @@
         });
         scene.add(cube1.getMesh());
 
+        cube2 = new ColorCube({
+            x: 2, y: 2, z: 2, 
+            material: defaultMaterial
+        });
+        scene.add(cube2.getMesh());
+        // cube2.getMesh().position = new THREE.Vector3(0,-30,0);
+        cube2.getMesh().position.y = -30;
+
         debugLineGeometry = new THREE.Geometry();
         lineMaterialRed = new THREE.LineBasicMaterial({ color: 0xff0000 });
         lineMaterialGreen = new THREE.LineBasicMaterial({ color: 0x00ff00 });
@@ -132,6 +141,7 @@
         scene.add(line5);
     }
 
+    const HALF_PI = Math.PI /2;
     // Game time
     let deltaTime = 0;
     const startTime = Date.now();
@@ -154,17 +164,36 @@
     let moveForce = new THREE.Vector3(0,0,0);
 
     let gameSlowFactor = 1;
+    let distanceToPlayer = 10;
     // ---------
     const GROUND_LEVEL = -30;
     const processUserInputs = () => {
-        userInputs.direction.x = userInputs.keyboard.right - userInputs.keyboard.left;
-        userInputs.direction.z = - userInputs.keyboard.up + userInputs.keyboard.down;
+        // userInputs.direction.x = userInputs.keyboard.right - userInputs.keyboard.left;
+        // userInputs.direction.z = - userInputs.keyboard.up + userInputs.keyboard.down;
+
+        let vectFW = cube1.getMesh().position.clone().sub(camera.position);
+        let tmp = vectFW.clone();
+        let vectBW = new THREE.Vector3().sub(vectFW);
+        let vectR = vectFW.clone().applyAxisAngle(new THREE.Vector3(0,1,0), -HALF_PI);
+        let vectL = new THREE.Vector3().sub(vectR);
+        let result = new THREE.Vector3();
+            result.add(vectFW.multiplyScalar(userInputs.keyboard.up));
+            result.add(vectBW.multiplyScalar(userInputs.keyboard.down));
+            result.add(vectR.multiplyScalar(userInputs.keyboard.right));
+            result.add(vectL.multiplyScalar(userInputs.keyboard.left));
+
+        userInputs.direction = result;
+
         userInputs.direction.normalize();
+
+        let distToPlayer = tmp.length();
+        let ksdjfh = distToPlayer - distanceToPlayer;
+        camera.position.add(tmp.normalize().multiplyScalar(ksdjfh));
 
         userInputs.direction.y = 0;
         !!userInputs.jump && !!userInputs.grounded && (userInputs.direction.y = jumpIntensity);
 
-        // camera.lookAt(cube1.getMesh().position);
+        camera.lookAt(cube1.getMesh().position);
 
         debugLineGeometry = new THREE.Geometry();
         debugLineGeometry.vertices.push(new THREE.Vector3());
