@@ -71,6 +71,13 @@
     const fpsCount_dom = document.getElementById( 'fps_count' );
     const infos_dom = document.getElementById( 'infos' );
 
+    let userInputs = {
+        keyboard: {
+            up: 0, down: 0, left: 0, right: 0
+        },
+        direction : new THREE.Vector3(0,0,0)
+    }
+
     const GRAVITY = 9.80665;
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
@@ -89,6 +96,8 @@
     let line1;
     let line2;
     let line3;
+    let line4;
+    let line5;
 
     function init(){
         scene = new THREE.Scene();
@@ -112,9 +121,13 @@
         line1 = new THREE.Line( debugLineGeometry, lineMaterialRed );
         line2 = new THREE.Line( debugLineGeometry, lineMaterialGreen );
         line3 = new THREE.Line( debugLineGeometry, lineMaterialBlue );
+        line4 = new THREE.Line( debugLineGeometry, lineMaterialGreen );
+        line5 = new THREE.Line( debugLineGeometry, lineMaterialRed );
         scene.add(line1);
         scene.add(line2);
         scene.add(line3);
+        scene.add(line4);
+        scene.add(line5);
     }
 
     // Game time
@@ -129,12 +142,28 @@
     // ----------
     let rotateAmount = Math.PI / 30;
     let rotateSpeed = 1;
+    let inertiaLerpSpeed = 15;
     // ---------
     let velocity = new THREE.Vector3(0,0,0);
     let gravityForce = new THREE.Vector3(0,1,0).multiplyScalar(-GRAVITY);
     let moveDirection = new THREE.Vector3(0,0,0);
     let moveSpeed = 20;
     let moveForce = new THREE.Vector3(0,0,0);
+
+    const processUserInputs = () => {
+        userInputs.direction.x = userInputs.keyboard.right - userInputs.keyboard.left;
+        userInputs.direction.y = userInputs.keyboard.up - userInputs.keyboard.down;
+        userInputs.direction.normalize();
+
+        debugLineGeometry = new THREE.Geometry();
+        debugLineGeometry.vertices.push(new THREE.Vector3());
+        debugLineGeometry.vertices.push(userInputs.direction.clone().multiplyScalar(2));
+        line4.geometry = debugLineGeometry;
+    }
+
+    const normalizeValue = (value, min, max) => {
+        return (value - min)/(max - min);
+    }
     // ---------
     function gameLoop(){
         frameCount < frameLimit && requestAnimationFrame(gameLoop);
@@ -143,30 +172,35 @@
         elapsedTime = Date.now() - startTime;
         fpsCount = 1000 / deltaTime;
         !(frameCount%htmlUIUpdateRate) && (fpsCount_dom.innerHTML = parseInt(fpsCount));
+        fpsCount_dom.innerHTML = `up:${userInputs.keyboard.up} down:${userInputs.keyboard.down} left:${userInputs.keyboard.left} right:${userInputs.keyboard.right}`;
+        // --------------------------
+        processUserInputs();
         // --------------------------
         updateShaderValues({elapsedTime: elapsedTime/1000});
         cube1.addRotationAxisAngle(new THREE.Vector3(0, 1, 1),  (rotateAmount * rotateSpeed) / deltaTime);
         // --------------------------
-        moveDirection.x = Math.cos(elapsedTime/500);
-        moveDirection.y = Math.sin(elapsedTime/500);
+        // moveDirection.x = Math.cos(elapsedTime/500);
+        // moveDirection.y = Math.sin(elapsedTime/500);
+
+        moveDirection.lerp(userInputs.direction, (0.1 / deltaTime) * inertiaLerpSpeed);
         
         debugLineGeometry = new THREE.Geometry();
         debugLineGeometry.vertices.push(cube1.getMesh().position.clone());
         debugLineGeometry.vertices.push(cube1.getMesh().position.clone().add(gravityForce.clone().multiplyScalar(1/2)));
         line1.geometry = debugLineGeometry;
+
+        debugLineGeometry = new THREE.Geometry();
+        debugLineGeometry.vertices.push(new THREE.Vector3());
+        debugLineGeometry.vertices.push(moveDirection.clone().multiplyScalar(5));
+        line5.geometry = debugLineGeometry;
         
-        moveForce = moveDirection.multiplyScalar(moveSpeed);
+        moveForce = moveDirection.clone().multiplyScalar(moveSpeed);
         debugLineGeometry = new THREE.Geometry();
         debugLineGeometry.vertices.push(cube1.getMesh().position.clone());
         debugLineGeometry.vertices.push(cube1.getMesh().position.clone().add(moveForce.clone().multiplyScalar(1/2)));
         line2.geometry = debugLineGeometry;
         
-        velocity = gravityForce.clone().add(moveForce)
-        // debugLineGeometry = new THREE.Geometry();
-        // debugLineGeometry.vertices.push(cube1.getMesh().position.clone());
-        // debugLineGeometry.vertices.push(velocity);
-        // line3.geometry = debugLineGeometry;
-        
+        velocity = gravityForce.clone().add(moveForce);
         debugLineGeometry = new THREE.Geometry();
         debugLineGeometry.vertices.push(cube1.getMesh().position.clone());
         debugLineGeometry.vertices.push(cube1.getMesh().position.clone().add(velocity.clone().multiplyScalar(1/2)));
@@ -184,6 +218,27 @@
     gameLoop();
   </script>
   <script>
+    const handleKeyboardInput = (keycode, down) => {
+        switch(event.keyCode){
+			case 38: 
+			case 90: 
+                userInputs.keyboard.up = down;
+                break;
+            case 40:
+            case 83:
+                userInputs.keyboard.down = down;
+                break;
+            case 37:
+            case 81:
+                userInputs.keyboard.left = down;
+                break;
+            case 39:
+            case 68:
+                userInputs.keyboard.right = down;
+                break;
+        }
+    }
+
       let mouseX = 0;
       let mouseY = 0;
       const canvas = document.getElementsByTagName('canvas')[0];
@@ -193,6 +248,18 @@
         mouseY = event.pageY - canvas.offsetTop;
         // console.log(mouseX,mouseY);
       };
+
+      document.onkeydown = (event) => {
+		event = event || window.event;
+		event.preventDefault();
+        handleKeyboardInput(event.keyCode, 1);
+
+	}
+    document.onkeyup = (event) => {
+        event = event || window.event;
+		event.preventDefault();
+        handleKeyboardInput(event.keyCode, 0);
+    }
   </script>
 </body>
 </html>
