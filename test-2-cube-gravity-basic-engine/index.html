@@ -17,6 +17,7 @@
         <ul>
             <li><i id="fps_count">0</i></li>
             <li><i id="infos">0</i></li>
+            <li><i id="infos-2">0</i></li>
 
         </ul>
     </div>
@@ -70,6 +71,7 @@
   <script>
     const fpsCount_dom = document.getElementById( 'fps_count' );
     const infos_dom = document.getElementById( 'infos' );
+    const infos2_dom = document.getElementById( 'infos-2' );
 
     let userInputs = {
         keyboard: {
@@ -135,7 +137,7 @@
     const startTime = Date.now();
     let elapsedTime = 0;
     let lastTime = startTime;
-    const frameLimit = 1000;
+    const frameLimit = 10000000000;
     let frameCount = 0;
     let fpsCount = 0;
     let htmlUIUpdateRate = 15;
@@ -148,12 +150,21 @@
     let gravityForce = new THREE.Vector3(0,1,0).multiplyScalar(-GRAVITY);
     let moveDirection = new THREE.Vector3(0,0,0);
     let moveSpeed = 20;
+    let jumpIntensity = 20 ;
     let moveForce = new THREE.Vector3(0,0,0);
 
+    let gameSlowFactor = 1;
+    // ---------
+    const GROUND_LEVEL = -30;
     const processUserInputs = () => {
         userInputs.direction.x = userInputs.keyboard.right - userInputs.keyboard.left;
-        userInputs.direction.y = userInputs.keyboard.up - userInputs.keyboard.down;
+        userInputs.direction.z = - userInputs.keyboard.up + userInputs.keyboard.down;
         userInputs.direction.normalize();
+
+        userInputs.direction.y = 0;
+        !!userInputs.jump && !!userInputs.grounded && (userInputs.direction.y = jumpIntensity);
+
+        // camera.lookAt(cube1.getMesh().position);
 
         debugLineGeometry = new THREE.Geometry();
         debugLineGeometry.vertices.push(new THREE.Vector3());
@@ -172,7 +183,15 @@
         elapsedTime = Date.now() - startTime;
         fpsCount = 1000 / deltaTime;
         !(frameCount%htmlUIUpdateRate) && (fpsCount_dom.innerHTML = parseInt(fpsCount));
-        fpsCount_dom.innerHTML = `up:${userInputs.keyboard.up} down:${userInputs.keyboard.down} left:${userInputs.keyboard.left} right:${userInputs.keyboard.right}`;
+        infos_dom.innerHTML = `
+            up:${userInputs.keyboard.up} 
+            down:${userInputs.keyboard.down} 
+            left:${userInputs.keyboard.left} 
+            right:${userInputs.keyboard.right}
+            jump:${userInputs.jump}
+            grounded:${userInputs.grounded}
+
+        `;
         // --------------------------
         processUserInputs();
         // --------------------------
@@ -206,7 +225,14 @@
         debugLineGeometry.vertices.push(cube1.getMesh().position.clone().add(velocity.clone().multiplyScalar(1/2)));
         line3.geometry = debugLineGeometry;
 
-        cube1.getMesh().position.add(velocity.multiplyScalar(1/(6*deltaTime)));
+        cube1.getMesh().position.add(velocity.multiplyScalar(1/(gameSlowFactor*deltaTime)));
+        if(cube1.getMesh().position.y < GROUND_LEVEL){
+            cube1.getMesh().position.y = GROUND_LEVEL;
+            userInputs.grounded = true;
+        }else{
+            userInputs.grounded = false;
+        }
+        infos2_dom.innerHTML = cube1.getMesh().position.y;
         
 
 
@@ -235,6 +261,9 @@
             case 39:
             case 68:
                 userInputs.keyboard.right = down;
+                break;
+            case 32:
+                userInputs.jump = down;
                 break;
         }
     }

@@ -26,6 +26,11 @@
         * new guizmos : 
             * fixed green is the normalized user inputs direction
             * fixed red is this same direction with inertia
+* [V3] :
+    * now move on 3D plan
+    * jump (with space)
+    * ground collision
+    
 
 # Ideas for later (maybe one day...) :  
 * interractive vertex shader, subdivide mesh and apply locale modifications around cursor
